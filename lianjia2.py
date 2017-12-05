@@ -19,6 +19,8 @@ class OldHouseSpider(scrapy.Spider):
 			priceInfoList=list(iter(priceInfo.children))
 			totalPrice=priceInfoList[0].children.next().string
 			unitPrice=priceInfoList[1]['data-price']
+			(houseHigh,totalHigh,year,types,area)=parsePositionInfo(baseInfo)
+			(line,station,distance)=parseSubway(baseInfo)
 			yield{
 			'title':baseInfo.find("div",class_="title").find("a").string,
 			'region':region,
@@ -28,7 +30,15 @@ class OldHouseSpider(scrapy.Spider):
 			'houseFitment':houseFitment,
 			'houseElevator':houseElevator,
 			'totalPrice':totalPrice,
-			'unitPrice':unitPrice
+			'unitPrice':unitPrice,
+			'houseHigh':houseHigh,
+			'totalHigh':totalHigh,
+			'year':year,
+			'types':types,
+			'area':area,
+			'line':line,
+			'station':station,
+			'distance':distance
 
 			}
 		pageCtrl=soup.find("div",class_="page-box house-lst-page-box")
@@ -69,18 +79,42 @@ def parseHouseInfo(infostring):
 	return (houseType,houseArea,houseDirection,houseFitment,houseElevator)
 
 
+def parsePositionInfo(baseInfo):
+	nullObj=('','','','','')
+	positionInfo=baseInfo.find("div",class_="positionInfo")
+	positionInfoList=list(iter(positionInfo.children))
+	positonString=positionInfoList[1]
+	leftIndex=positonString.find(u'(')
+	rightIndex=positonString.find(u')')
+	if rightIndex==-1 or rightIndex==-1:
+		print positonString
+		return nullObj
+	houseHigh=positonString[0:leftIndex]
+	totalHighString=positonString[leftIndex+1:rightIndex]
+	if totalHighString.find(u'共')==-1 or totalHighString.find(u'层')==-1:
+		print positonString
+		return nullObj
+	totalHigh=totalHighString[totalHighString.find(u'共')+1:totalHighString.find(u'层')]
+	yearTypeString=positonString[rightIndex+1:]
+	year=yearTypeString[0:4]
+	types=yearTypeString[6:8]
+	return  (houseHigh,totalHigh,year,types,positionInfoList[2].string)
 
-
-
+def parseSubway(baseInfo):
+	nullObj=('','','')
+	subwayInfo=baseInfo.find("span",class_='subway')
+	if subwayInfo==None:
+		return nullObj
+	subwayString=subwayInfo.string
+	lineIndex=subwayString.find(u'号线')
+	line=subwayString[2:lineIndex+2]
+	stationIndex=subwayString.rfind(u'站')
+	station=subwayString[lineIndex+2:stationIndex+1]
+	distance=subwayString[stationIndex+1:]
+	return (line,station,distance)
 
 #aa=response.xpath('//body//div[@class="page-box fr"]').extract_first()
 
-#soup = BeautifulSoup(response.body,"lxml")
-#python -m scrapy runspider lianjia2.py  -o oldhouse.csv -t csv
+#python -m scrapy runspider lianjia2.py -o oldhouse.csv -t csv
 
-
-#positionInfo=baseInfo.find("div",class_="positionInfo")
-#positionInfoList=list(iter(positionInfo.children))
-
-#print positionInfoList[2].string
-#print positionInfoList[1]
+#subwayInfo=baseInfo.find("span",class_='subway')
