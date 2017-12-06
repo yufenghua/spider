@@ -3,13 +3,32 @@
 import scrapy
 from bs4 import BeautifulSoup
 import json
+import mysql.connector
 class OldHouseSpider(scrapy.Spider):
 	name="oldhouse"
 	start_urls=["https://gz.lianjia.com/ershoufang/",]
+	cnx = mysql.connector.connect(user='root', database='mysql',password='root')
+	cursor = cnx.cursor()
+	cursor.execute("truncate table house_info")
+	cnx.commit()
+	cursor.close()
+	cnx.close()
+
+	
+
+
+
+
+
+
 	
 	def parse(self,response):
+		add_house = ("insert into house_info  (title,region,houseType,houseArea,houseDirection,houseFitment,houseElevator,totalPrice,unitPrice,houseHigh,totalHigh,year,types,area,line,station,distance) values "+
+		"(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
 		soup = BeautifulSoup(response.body,"lxml")
 		baseInfos=soup.find_all("div",class_="info clear")
+		cnx = mysql.connector.connect(user='root', database='mysql',password='root')
+		cursor = cnx.cursor()
 		for baseInfo in baseInfos:
 			houseInfo=baseInfo.find("div",class_="houseInfo")
 			houseEleList=list(iter(houseInfo.children))
@@ -21,26 +40,30 @@ class OldHouseSpider(scrapy.Spider):
 			unitPrice=priceInfoList[1]['data-price']
 			(houseHigh,totalHigh,year,types,area)=parsePositionInfo(baseInfo)
 			(line,station,distance)=parseSubway(baseInfo)
-			yield{
-			'title':baseInfo.find("div",class_="title").find("a").string,
-			'region':region,
-			'houseType':houseType,
-			'houseArea':houseArea,
-			'houseDirection':houseDirection,
-			'houseFitment':houseFitment,
-			'houseElevator':houseElevator,
-			'totalPrice':totalPrice,
-			'unitPrice':unitPrice,
-			'houseHigh':houseHigh,
-			'totalHigh':totalHigh,
-			'year':year,
-			'types':types,
-			'area':area,
-			'line':line,
-			'station':station,
-			'distance':distance
-
-			}
+			house=(
+			str(baseInfo.find("div",class_="title").find("a").string.encode("utf8")),
+			str(region.encode("utf8")),
+			str(houseType.encode("utf8")),
+			str(houseArea.encode("utf8")),
+			str(houseDirection.encode("utf8")),
+			str(houseFitment.encode("utf8")),
+			str(houseElevator.encode("utf8")),
+			str(totalPrice.encode("utf8")),
+			str(unitPrice.encode("utf8")),
+			str(houseHigh.encode("utf8")),
+			str(totalHigh.encode("utf8")),
+			str(year.encode("utf8")),
+			str(types.encode("utf8")),
+			str(area.encode("utf8")),
+			str(line.encode("utf8")),
+			str(station.encode("utf8")),
+			str(distance.encode("utf8"))
+			)
+			cursor.execute(add_house,house)
+		cnx.commit()
+		cursor.close()
+		cnx.close()
+		yield {'region':region}
 		pageCtrl=soup.find("div",class_="page-box house-lst-page-box")
 		pageJson=json.loads(pageCtrl['page-data'])
 		next_page=None
@@ -48,6 +71,7 @@ class OldHouseSpider(scrapy.Spider):
 			next_page=pageCtrl['page-url'].replace('{page}',str(int(pageJson['curPage'])+1))
 		if next_page is not None:
 			 yield response.follow(next_page, self.parse)
+
 
 
 
@@ -96,8 +120,13 @@ def parsePositionInfo(baseInfo):
 		return nullObj
 	totalHigh=totalHighString[totalHighString.find(u'共')+1:totalHighString.find(u'层')]
 	yearTypeString=positonString[rightIndex+1:]
-	year=yearTypeString[0:4]
-	types=yearTypeString[6:8]
+	year=''
+	types=''
+	if is_number(yearTypeString[0:4]):
+		year=yearTypeString[0:4]
+		types=yearTypeString[6:8]
+	else:
+		types=yearTypeString
 	return  (houseHigh,totalHigh,year,types,positionInfoList[2].string)
 
 def parseSubway(baseInfo):
@@ -113,8 +142,16 @@ def parseSubway(baseInfo):
 	distance=subwayString[stationIndex+1:]
 	return (line,station,distance)
 
+def is_number(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
 #aa=response.xpath('//body//div[@class="page-box fr"]').extract_first()
 
 #python -m scrapy runspider lianjia2.py -o oldhouse.csv -t csv
 
 #subwayInfo=baseInfo.find("span",class_='subway')
+#python -m scrapy shell https://gz.lianjia.com/ershoufang/
