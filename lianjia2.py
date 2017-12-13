@@ -23,8 +23,8 @@ class OldHouseSpider(scrapy.Spider):
 
 	
 	def parse(self,response):
-		add_house = ("insert into house_info  (title,region,houseType,houseArea,houseDirection,houseFitment,houseElevator,totalPrice,unitPrice,houseHigh,totalHigh,year,types,area,line,station,distance) values "+
-		"(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
+		add_house = ("insert into house_info  (title,region,houseType,houseArea,houseDirection,houseFitment,houseElevator,totalPrice,unitPrice,houseHigh,totalHigh,year,types,area,line,station,distance,houseurl) values "+
+		"(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
 		soup = BeautifulSoup(response.body,"lxml")
 		baseInfos=soup.find_all("div",class_="info clear")
 		cnx = mysql.connector.connect(user='root', database='mysql',password='root')
@@ -57,13 +57,14 @@ class OldHouseSpider(scrapy.Spider):
 			str(area.encode("utf8")),
 			str(line.encode("utf8")),
 			str(station.encode("utf8")),
-			str(distance.encode("utf8"))
+			str(distance.encode("utf8")),
+			str(baseInfo.find("div",class_="title").find("a")['href'])
 			)
 			cursor.execute(add_house,house)
 		cnx.commit()
 		cursor.close()
 		cnx.close()
-		yield {'region':region}
+		print 'aaa'
 		pageCtrl=soup.find("div",class_="page-box house-lst-page-box")
 		pageJson=json.loads(pageCtrl['page-data'])
 		next_page=None
