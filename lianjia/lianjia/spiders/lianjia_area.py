@@ -36,14 +36,15 @@ class LianjiaAreaSpider(scrapy.Spider):
 		currentCityUrl=currentCity["href"]
 		currentCityCode=currentCityUrl.split('/')[2]
 		areaList=positionlist[2].find_all("a")
-		self.conn  = mysql.connector.connect(user='root', database='mysql',password='root')
-		self.cursor = self.conn.cursor()
+		#self.conn  = mysql.connector.connect(user='root', database='mysql',password='root')
+		#self.cursor = self.conn.cursor()
 		for area in areaList:
 			yield {
                 'code': area['href'].split('/')[2],
                 'name': area.string,
                 'citycode':currentCityCode,
-                'cityname':currentCityName
+                'cityname':currentCityName,
+                'url':'https://gz.lianjia.com'+area['href']
             }
 			#print item
 			#self.cursor.execute("""INSERT INTO house_area (area_code, area_name,city_code,city_name) VALUES (%s, %s, %s, %s)""", (item.get('code','').encode('utf-8'), item.get('name','').encode('utf-8'),

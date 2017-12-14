@@ -4,11 +4,17 @@ import scrapy
 from bs4 import BeautifulSoup
 import json
 import mysql.connector
+import logging
+
 class OldHouseSpider(scrapy.Spider):
+	logger = logging.getLogger(__name__)
 	name="oldhouse"
-	start_urls=["https://gz.lianjia.com/ershoufang/",]
 	cnx = mysql.connector.connect(user='root', database='mysql',password='root')
 	cursor = cnx.cursor()
+	cursor.execute('select areaurl from house_area ')
+	urls=list(map(lambda (areaurl):areaurl[0], cursor.fetchall()))
+	logger.error(urls[1][0])
+	start_urls =urls
 	cursor.execute("truncate table house_info")
 	cnx.commit()
 	cursor.close()
@@ -66,10 +72,11 @@ class OldHouseSpider(scrapy.Spider):
 		cnx.close()
 		print 'aaa'
 		pageCtrl=soup.find("div",class_="page-box house-lst-page-box")
-		pageJson=json.loads(pageCtrl['page-data'])
 		next_page=None
-		if(pageJson['totalPage']!=pageJson['curPage']):
-			next_page=pageCtrl['page-url'].replace('{page}',str(int(pageJson['curPage'])+1))
+		if pageCtrl is not None:
+			pageJson=json.loads(pageCtrl['page-data'])
+			if(pageJson['totalPage']!=pageJson['curPage']):
+				next_page=pageCtrl['page-url'].replace('{page}',str(int(pageJson['curPage'])+1))
 		if next_page is not None:
 			 yield response.follow(next_page, self.parse)
 

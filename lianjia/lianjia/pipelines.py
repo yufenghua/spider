@@ -15,18 +15,20 @@ class LianjiaPipeline(object):
 		self.logger.info('init')
 		self.conn  = mysql.connector.connect(user='root', database='mysql',password='root')
 		self.cursor = self.conn.cursor()
+		self.cursor.execute("""truncate table house_area""")
+		self.conn.commit()
 		self.logger.info('init suc')
 
-def process_item(self, item, spider):
-	self.logger.info('process')   
+	def process_item(self, item, spider):
+		self.logger.info('process')   
 
-	self.cursor.execute("""INSERT INTO house_area (area_code, area_name,city_code,city_name)
-				VALUES (%s, %s, %s, %s)""", (item.get('code','').encode('utf-8'), item.get('name','').encode('utf-8'),
-				 item.get('citycode','').encode('utf-8'), item.get('cityname','').encode('utf-8')))
-	self.conn.commit()
-	self.logger.info('process suc') 
-	return item
-def close_spider(self, spider):
-	self.logger.info( 'close')
-	self.cursor.close()
-	self.conn.close()
+		self.cursor.execute("""INSERT INTO house_area (area_code, area_name,city_code,city_name,areaurl)
+					VALUES (%s, %s, %s, %s,%s)""", (item.get('code','').encode('utf-8'), item.get('name','').encode('utf-8'),
+					 item.get('citycode','').encode('utf-8'), item.get('cityname','').encode('utf-8'),item.get('url','').encode('utf-8')))
+		self.conn.commit()
+		self.logger.info('process suc') 
+		return item
+	def close_spider(self, spider):
+		self.logger.info( 'close')
+		self.cursor.close()
+		self.conn.close()
